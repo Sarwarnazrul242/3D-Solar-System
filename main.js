@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import sunTexture from './src/img/sun.jpg';
-import marsTexture from './src/img/mars.jpg';
+import mercuryTexture from './src/img/mercury.jpg';
+import venusTexture from './src/img/venus.jpg';
 import earthTexture from './src/img/earth.jpg';
+import marsTexture from './src/img/mars.jpg';
+import jupiterTexture from './src/img/jupiter.jpg';
 import saturnTexture from './src/img/saturn.jpg';
-import saturnRingTexture from './src/img/saturnRing.jpg'; // Ensure you have this texture
+import saturnRingTexture from './src/img/saturnRing.jpg';
+import uranusTexture from './src/img/uranus.jpg';
+import uranusRingTexture from './src/img/uranusRing.jpg';
+import neptuneTexture from './src/img/neptune.jpg';
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -23,13 +29,13 @@ const orbit = new OrbitControls(camera, renderer.domElement);
 camera.position.set(-90, 140, 140);
 orbit.update();
 
-const ambient = new THREE.AmbientLight(0x333333);
+const ambient = new THREE.AmbientLight(0x333333, 40 ,100);
 scene.add(ambient);
 
 const textureLoader = new THREE.TextureLoader();
 
 // Create the Sun
-const sunGeo = new THREE.SphereGeometry(12, 64, 64);
+const sunGeo = new THREE.SphereGeometry(16, 64, 64);
 const sunMat = new THREE.MeshBasicMaterial({
   map: textureLoader.load(sunTexture)
 });
@@ -39,46 +45,51 @@ scene.add(sun);
 const pointLight = new THREE.PointLight(0xffffff, 3, 300);
 scene.add(pointLight);
 
-// Function to create planets
-function createPlanet(size, texture, position, ring) {
-    const geometry = new THREE.SphereGeometry(size, 25, 20);
-    const material = new THREE.MeshPhongMaterial({
-      map: textureLoader.load(texture)
-    });
-    const planet = new THREE.Mesh(geometry, material);
-    const planetObj = new THREE.Object3D;
-    planetObj.add(planet);
-    scene.add(planetObj);
-    planetObj.position.x = position;
+function createPlanet(size, texture, distanceFromSun, orbitRadius, orbitSpeed, ring) {
+  const geometry = new THREE.SphereGeometry(size, 32, 32);
+  const material = new THREE.MeshPhongMaterial({ map: textureLoader.load(texture) });
+  const planet = new THREE.Mesh(geometry, material);
+  const planetObj = new THREE.Object3D();
+  planetObj.add(planet);
+  scene.add(planetObj);
 
-    if (ring) {
-      const ringGeo = new THREE.RingGeometry(
-        ring.innerRadius,
-        ring.outerRadius, 64
-      );
-      const ringMat = new THREE.MeshStandardMaterial({
-        map: textureLoader.load(ring.texture),
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8
-      });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = -0.5 * Math.PI; // Rotate the ring to be horizontal
-      planetObj.add(ringMesh); // Add ringMesh to the same planetObj as the planet
-    }
-    return {planet, planetObj};
+  planet.position.x = distanceFromSun;
+
+  if (ring) {
+    const ringGeo = new THREE.RingGeometry(ring.innerRadius, ring.outerRadius, 64);
+    const ringMat = new THREE.MeshStandardMaterial({
+      map: textureLoader.load(ring.texture),
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -0.5 * Math.PI;
+    planetObj.add(ringMesh);
+  }
+
+  return { planet, planetObj, orbitRadius, orbitSpeed };
 }
 
-// Create Mars
-const mars = createPlanet(5, marsTexture, 20);
-const earth = createPlanet(6, earthTexture, 40);
-
-// Create Saturn with Rings
-const saturn = createPlanet(8, saturnTexture, 80, {
-  innerRadius: 10,
-  outerRadius: 20,
-  texture: saturnRingTexture
-});
+// Create Planets based on the image
+const planets = [
+  createPlanet(1.5, mercuryTexture, 28, 20, 0.004), // Mercury
+  createPlanet(3.5, venusTexture, 50, 40, 0.0015), // Venus
+  createPlanet(4, earthTexture, 75, 60, 0.001), // Earth
+  createPlanet(2.5, marsTexture, 115, 80, 0.0008), // Mars
+  createPlanet(11, jupiterTexture, 200, 120, 0.0003), // Jupiter
+  createPlanet(9, saturnTexture, 300, 160, 0.0002, {
+    innerRadius: 11,
+    outerRadius: 20,
+    texture: saturnRingTexture
+  }), // Saturn with Rings
+  createPlanet(7, uranusTexture, 400, 200, 0.0001, {
+    innerRadius: 7.5,
+    outerRadius: 15,
+    texture: uranusRingTexture
+  }), // Uranus with Rings
+  createPlanet(6.5, neptuneTexture, 500, 240, 0.00005), // Neptune
+];
 
 // Create stars background
 function createStars() {
@@ -102,14 +113,14 @@ function createStars() {
 createStars();
 
 function animate() {
-
   sun.rotation.y += 0.001;
-  mars.planet.rotation.y += 0.005;
-  mars.planetObj.rotation.y += 0.001; 
-  earth.planet.rotation.y += 0.005;
-  earth.planetObj.rotation.y += 0.001;
-  saturn.planet.rotation.y += 0.005;
-  saturn.planetObj.rotation.y += 0.001; 
+
+  planets.forEach((planet) => {
+    planet.planet.rotation.y += 0.005;
+    planet.planetObj.rotation.y += planet.orbitSpeed;
+    planet.planetObj.position.x = planet.orbitRadius * Math.cos(planet.planetObj.rotation.y);
+    planet.planetObj.position.z = planet.orbitRadius * Math.sin(planet.planetObj.rotation.y);
+  });
 
   renderer.render(scene, camera);
 }
