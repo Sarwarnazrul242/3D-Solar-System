@@ -26,11 +26,11 @@ const camera = new THREE.PerspectiveCamera(
 );
 
 const orbit = new OrbitControls(camera, renderer.domElement);
-camera.position.set(-90, 140, 140);
+camera.position.set(-200, 300, 300);
 orbit.update();
 
-const ambient = new THREE.AmbientLight(0x333333, 40 ,100);
-scene.add(ambient);
+const ambientLight = new THREE.AmbientLight(0x333333, 40, 100);
+scene.add(ambientLight);
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -42,18 +42,19 @@ const sunMat = new THREE.MeshBasicMaterial({
 const sun = new THREE.Mesh(sunGeo, sunMat);
 scene.add(sun);
 
-const pointLight = new THREE.PointLight(0xffffff, 3, 300);
+const pointLight = new THREE.PointLight(0xffffff, 2, 1000);
 scene.add(pointLight);
 
-function createPlanet(size, texture, distanceFromSun, orbitRadius, orbitSpeed, ring) {
+// Function to create planets and add orbit paths
+function createPlanet(size, texture, distanceFromSun, orbitSpeed, ring) {
+  const planetObj = new THREE.Object3D();
+  scene.add(planetObj);
+
   const geometry = new THREE.SphereGeometry(size, 32, 32);
   const material = new THREE.MeshPhongMaterial({ map: textureLoader.load(texture) });
   const planet = new THREE.Mesh(geometry, material);
-  const planetObj = new THREE.Object3D();
-  planetObj.add(planet);
-  scene.add(planetObj);
-
   planet.position.x = distanceFromSun;
+  planetObj.add(planet);
 
   if (ring) {
     const ringGeo = new THREE.RingGeometry(ring.innerRadius, ring.outerRadius, 64);
@@ -64,31 +65,41 @@ function createPlanet(size, texture, distanceFromSun, orbitRadius, orbitSpeed, r
       opacity: 0.8
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.rotation.x = -0.5 * Math.PI;
-    planetObj.add(ringMesh);
+    ringMesh.position.x = distanceFromSun; // Ensure the ring is centered on the planet
+    ringMesh.rotation.x = -0.5 * Math.PI; // Rotate the ring to be horizontal
+    planetObj.add(ringMesh); // Add the ring to the planetObj
   }
 
-  return { planet, planetObj, orbitRadius, orbitSpeed };
+  // Orbit Path (Ellipse)
+  const orbitPath = new THREE.EllipseCurve(0, 0, distanceFromSun, distanceFromSun);
+  const pathPoints = orbitPath.getPoints(64);
+  const pathGeometry = new THREE.BufferGeometry().setFromPoints(pathPoints);
+  const pathMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const orbitLine = new THREE.Line(pathGeometry, pathMaterial);
+  orbitLine.rotation.x = Math.PI / 2; // Rotate to be flat in the XY plane
+  scene.add(orbitLine);
+
+  return { planet, planetObj, orbitSpeed };
 }
 
 // Create Planets based on the image
 const planets = [
-  createPlanet(1.5, mercuryTexture, 28, 20, 0.004), // Mercury
-  createPlanet(3.5, venusTexture, 50, 40, 0.0015), // Venus
-  createPlanet(4, earthTexture, 75, 60, 0.001), // Earth
-  createPlanet(2.5, marsTexture, 115, 80, 0.0008), // Mars
-  createPlanet(11, jupiterTexture, 200, 120, 0.0003), // Jupiter
-  createPlanet(9, saturnTexture, 300, 160, 0.0002, {
+  createPlanet(1.5, mercuryTexture, 28, 0.04), // Mercury
+  createPlanet(3.5, venusTexture, 45, 0.015), // Venus
+  createPlanet(4, earthTexture, 60, 0.01), // Earth
+  createPlanet(2.5, marsTexture, 75, 0.008), // Mars
+  createPlanet(11, jupiterTexture, 100, 0.003), // Jupiter
+  createPlanet(9, saturnTexture, 140, 0.002, {
     innerRadius: 11,
     outerRadius: 20,
     texture: saturnRingTexture
   }), // Saturn with Rings
-  createPlanet(7, uranusTexture, 400, 200, 0.0001, {
+  createPlanet(7, uranusTexture, 175, 0.001, {
     innerRadius: 7.5,
     outerRadius: 15,
     texture: uranusRingTexture
   }), // Uranus with Rings
-  createPlanet(6.5, neptuneTexture, 500, 240, 0.00005), // Neptune
+  createPlanet(6.5, neptuneTexture, 200, 0.0005), // Neptune
 ];
 
 // Create stars background
@@ -118,8 +129,8 @@ function animate() {
   planets.forEach((planet) => {
     planet.planet.rotation.y += 0.005;
     planet.planetObj.rotation.y += planet.orbitSpeed;
-    planet.planetObj.position.x = planet.orbitRadius * Math.cos(planet.planetObj.rotation.y);
-    planet.planetObj.position.z = planet.orbitRadius * Math.sin(planet.planetObj.rotation.y);
+    planet.planetObj.position.x = planet.planetObj.position.x;
+    planet.planetObj.position.z = planet.planetObj.position.z;
   });
 
   renderer.render(scene, camera);
