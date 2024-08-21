@@ -65,9 +65,9 @@ function createPlanet(size, texture, distanceFromSun, orbitSpeed, ring) {
       opacity: 0.8
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.position.x = distanceFromSun; // Ensure the ring is centered on the planet
+    ringMesh.position.x = distanceFromSun; 
     ringMesh.rotation.x = -0.5 * Math.PI; // Rotate the ring to be horizontal
-    planetObj.add(ringMesh); // Add the ring to the planetObj
+    planetObj.add(ringMesh); 
   }
 
   // Orbit Path (Ellipse)
@@ -76,13 +76,13 @@ function createPlanet(size, texture, distanceFromSun, orbitSpeed, ring) {
   const pathGeometry = new THREE.BufferGeometry().setFromPoints(pathPoints);
   const pathMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
   const orbitLine = new THREE.Line(pathGeometry, pathMaterial);
-  orbitLine.rotation.x = Math.PI / 2; // Rotate to be flat in the XY plane
+  orbitLine.rotation.x = Math.PI / 2; 
   scene.add(orbitLine);
 
   return { planet, planetObj, orbitSpeed };
 }
 
-// Create Planets based on the image
+
 const planets = [
   createPlanet(1.5, mercuryTexture, 28, 0.04), // Mercury
   createPlanet(3.5, venusTexture, 45, 0.015), // Venus
@@ -102,7 +102,7 @@ const planets = [
   createPlanet(6.5, neptuneTexture, 200, 0.0005), // Neptune
 ];
 
-// Create stars background
+
 function createStars() {
   const starGeometry = new THREE.BufferGeometry();
   const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
